@@ -6,7 +6,7 @@ import (
 )
 
 func TestInitLogger(t *testing.T) {
-	Init("debug", log.LstdFlags|log.Lmicroseconds, WithShowFuncName())
+	Set("debug", log.LstdFlags|log.Lmicroseconds, WithShowFuncName())
 	Info("this is info")
 	Error("this is error")
 }

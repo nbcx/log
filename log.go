@@ -23,7 +23,8 @@ const (
 	infoLevel  = 1
 	warnLevel  = 2
 	errorLevel = 3
-	fatalLevel = 4
+	panicLevel = 4
+	fatalLevel = 5
 )
 
 // log file name
@@ -37,6 +38,7 @@ const (
 	printInfoLevel  = "[info ]"
 	printWarnLevel  = "[warn ]"
 	printErrorLevel = "[error]"
+	printPanicLevel = "[panic]"
 	printFatalLevel = "[fatal]"
 )
 
@@ -64,14 +66,14 @@ func init() {
 	eLogger.baseLogger = log.New(eLogger.out, "", eLogger.flag)
 }
 
-// GetGLogger GetGLogger
-func GetGLogger() *Logger {
-	return gLogger
+// GetLogger StdLog and ErrLog
+func GetLogger() (*Logger, *Logger) {
+	return gLogger, eLogger
 }
 
-// GetELogger GetELogger
-func GetELogger() *Logger {
-	return eLogger
+// GetOutput Stdout and Stderr
+func GetOutput() (io.Writer, io.Writer) {
+	return gLogger.out, eLogger.out
 }
 
 func getLevel(level string) int32 {
@@ -125,8 +127,12 @@ func (logger *Logger) doPrintf(level int32, printLevel string, format string, a 
 	} else {
 		format = fmt.Sprintf("%s %s", printLevel, format)
 	}
-	_ = logger.baseLogger.Output(4, fmt.Sprintf(format, a...))
 
+	if level == panicLevel {
+		logger.baseLogger.Panicf(format, a...)
+	} else {
+		_ = logger.baseLogger.Output(4, fmt.Sprintf(format, a...))
+	}
 	if level == fatalLevel {
 		os.Exit(1)
 	}
@@ -157,6 +163,11 @@ func (logger *Logger) Error(format string, a ...interface{}) {
 	logger.doPrintf(errorLevel, printErrorLevel, format, a...)
 }
 
+// Panic Panic
+func (logger *Logger) Panic(format string, a ...interface{}) {
+	logger.doPrintf(panicLevel, printPanicLevel, format, a...)
+}
+
 // Fatal Fatal
 func (logger *Logger) Fatal(format string, a ...interface{}) {
 	logger.doPrintf(fatalLevel, printFatalLevel, format, a...)
@@ -180,6 +191,11 @@ func Warn(format string, a ...interface{}) {
 // Error Error
 func Error(format string, a ...interface{}) {
 	eLogger.Error(format, a...)
+}
+
+// Error Error
+func Panic(format string, a ...interface{}) {
+	eLogger.Panic(format, a...)
 }
 
 // Fatal Fatal
@@ -216,8 +232,8 @@ func WithPath(logDir string) Options {
 	}
 }
 
-// Init log
-func Init(level string, flag int, options ...Options) {
+// Set log
+func Set(level string, flag int, options ...Options) {
 	if isInit {
 		return
 	}
