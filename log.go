@@ -3,19 +3,16 @@ package log
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync/atomic"
+
+	"github.com/nbcx/log/internal"
 )
 
-var (
-	gLogger *Logger
-	eLogger *Logger
-	// isInit  bool
-)
+var std *Logger
 
 // levels
 const (
@@ -44,36 +41,35 @@ const (
 
 // Logger Logger
 type Logger struct {
-	level int32
-	flag  int // properties
-	// out          io.Writer
-	baseLogger   *log.Logger
+	level        int32
+	flag         int // properties
+	baseLogger   *internal.Logger
 	baseFile     *os.File
 	showFuncName bool
 }
 
 func init() {
-	gLogger = new(Logger)
+	std = new(Logger)
 	// gLogger.out = os.Stdout
-	gLogger.level = debugLevel
-	gLogger.flag = log.LstdFlags | log.Lmicroseconds | log.Lshortfile
-	gLogger.baseLogger = log.New(os.Stdout, "", gLogger.flag)
+	std.level = debugLevel
+	std.flag = internal.LstdFlags | internal.Lmicroseconds | internal.Lshortfile
+	std.baseLogger = internal.Default() // internal.New(os.Stdout, "", std.flag) // todo: 这里默认可以使用internal的std实例
 
-	eLogger = new(Logger)
-	// eLogger.out = os.Stderr
-	eLogger.level = warnLevel
-	eLogger.flag = gLogger.flag
-	eLogger.baseLogger = log.New(os.Stderr, "", eLogger.flag)
+	// eLogger = new(Logger)
+	// // eLogger.out = os.Stderr
+	// eLogger.level = warnLevel
+	// eLogger.flag = gLogger.flag
+	// eLogger.baseLogger = internal.New(os.Stderr, "", eLogger.flag)
 }
 
 // GetLogger StdLog and ErrLog
-func GetLogger() (*Logger, *Logger) {
-	return gLogger, eLogger
+func GetLogger() *Logger {
+	return std
 }
 
 // GetOutput Stdout and Stderr
-func GetOutput() (io.Writer, io.Writer) {
-	return gLogger.baseLogger.Writer(), eLogger.baseLogger.Writer()
+func GetOutput() io.Writer {
+	return std.baseLogger.Writer()
 }
 
 func getLevel(level string) int32 {
@@ -175,100 +171,42 @@ func (logger *Logger) Fatal(format string, a ...interface{}) {
 
 // Debug Debug
 func Debug(format string, a ...interface{}) {
-	gLogger.Debug(format, a...)
+	std.Debug(format, a...)
 }
 
 // Info Info
 func Info(format string, a ...interface{}) {
-	gLogger.Info(format, a...)
+	std.Info(format, a...)
 }
 
 // Warn Warn
 func Warn(format string, a ...interface{}) {
-	gLogger.Warn(format, a...)
+	std.Warn(format, a...)
 }
 
 // Error Error
 func Error(format string, a ...interface{}) {
-	eLogger.Error(format, a...)
+	std.Error(format, a...)
 }
 
 // Error Error
 func Panic(format string, a ...interface{}) {
-	eLogger.Panic(format, a...)
+	std.Panic(format, a...)
 }
 
 // Fatal Fatal
 func Fatal(format string, a ...interface{}) {
-	eLogger.Fatal(format, a...)
+	std.Fatal(format, a...)
 }
 
 // ReloadLogger 重新加载日志级别配置
 func ReloadLogger(level string) {
-	gLogger.SetLevel(getLevel(level))
-}
-
-type Options func(g *Logger, e *Logger)
-
-// WithShowFuncName 设置日志是否显示函数名
-func WithShowFuncName() Options {
-	return func(g *Logger, e *Logger) {
-		g.showFuncName = true
-		e.showFuncName = true
-	}
-}
-
-// WithPath 设置日志输出路径
-func WithPath(logDir string) Options {
-	return func(g *Logger, e *Logger) {
-		gLogger.baseLogger.SetOutput(g.combineFileWithStdWriter(filepath.Join(logDir, globalFileName), os.Stdout))
-		eLogger.baseLogger.SetOutput(e.combineFileWithStdWriter(filepath.Join(logDir, errFileName), os.Stderr))
-	}
-}
-
-// WithWriter 设置日志输出Writer
-func WithWriter(stdG, stdE io.Writer) Options {
-	return func(g *Logger, e *Logger) {
-		gLogger.baseLogger.SetOutput(stdG)
-		eLogger.baseLogger.SetOutput(stdE)
-	}
-}
-
-// WithPath 设置日志输出路径
-func WithLevel(level string) Options {
-	return func(g *Logger, e *Logger) {
-		gLogger.SetLevel(getLevel(level))
-		eLogger.SetLevel(getLevel(level))
-	}
-}
-
-func WithFlag(flag int) Options {
-	return func(g *Logger, e *Logger) {
-		gLogger.flag, eLogger.flag = flag, flag
-		gLogger.baseLogger.SetFlags(flag)
-		eLogger.baseLogger.SetFlags(flag)
-	}
-}
-
-// Set log
-func Set(options ...Options) { // level string, flag int,
-	// if isInit {
-	// 	return
-	// }
-	// isInit = true
-	// gLogger.level, eLogger.level = getLevel(level), getLevel(level)
-	// gLogger.flag, eLogger.flag = flag, flag
-	for _, op := range options {
-		op(gLogger, eLogger)
-	}
-	// gLogger.baseLogger = log.New(gLogger.out, "", gLogger.flag)
-	// eLogger.baseLogger = log.New(eLogger.out, "", eLogger.flag)
+	std.SetLevel(getLevel(level))
 }
 
 // CloseLogger 关闭日志
 func CloseLogger() {
-	gLogger.Close()
-	eLogger.Close()
+	std.Close()
 }
 
 // 获取正在运行的函数名

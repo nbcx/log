@@ -1,6 +1,7 @@
 package log
 
 import (
+	"os"
 	"testing"
 )
 
@@ -10,7 +11,7 @@ func TestInitLogger(t *testing.T) {
 	Set(WithLevel("info"))
 	Debug("this is debug 2")
 
-	Set(WithLevel("info")) // "debug", log.LstdFlags|log.Lmicroseconds, WithShowFuncName()
+	Set(WithLevel("info"), WithWriter(os.Stdout)) // "debug", log.LstdFlags|log.Lmicroseconds, WithShowFuncName()
 	Info("this is info")
 	Error("this is error")
 }
