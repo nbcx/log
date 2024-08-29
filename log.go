@@ -14,7 +14,7 @@ import (
 var (
 	gLogger *Logger
 	eLogger *Logger
-	isInit  bool
+	// isInit  bool
 )
 
 // levels
@@ -44,9 +44,9 @@ const (
 
 // Logger Logger
 type Logger struct {
-	level        int32
-	flag         int // properties
-	out          io.Writer
+	level int32
+	flag  int // properties
+	// out          io.Writer
 	baseLogger   *log.Logger
 	baseFile     *os.File
 	showFuncName bool
@@ -54,16 +54,16 @@ type Logger struct {
 
 func init() {
 	gLogger = new(Logger)
-	gLogger.out = os.Stdout
+	// gLogger.out = os.Stdout
 	gLogger.level = debugLevel
 	gLogger.flag = log.LstdFlags | log.Lmicroseconds | log.Lshortfile
-	gLogger.baseLogger = log.New(gLogger.out, "", gLogger.flag)
+	gLogger.baseLogger = log.New(os.Stdout, "", gLogger.flag)
 
 	eLogger = new(Logger)
-	eLogger.out = os.Stderr
+	// eLogger.out = os.Stderr
 	eLogger.level = warnLevel
 	eLogger.flag = gLogger.flag
-	eLogger.baseLogger = log.New(eLogger.out, "", eLogger.flag)
+	eLogger.baseLogger = log.New(os.Stderr, "", eLogger.flag)
 }
 
 // GetLogger StdLog and ErrLog
@@ -73,7 +73,7 @@ func GetLogger() (*Logger, *Logger) {
 
 // GetOutput Stdout and Stderr
 func GetOutput() (io.Writer, io.Writer) {
-	return gLogger.out, eLogger.out
+	return gLogger.baseLogger.Writer(), eLogger.baseLogger.Writer()
 }
 
 func getLevel(level string) int32 {
@@ -208,12 +208,6 @@ func ReloadLogger(level string) {
 	gLogger.SetLevel(getLevel(level))
 }
 
-// SetShowFuncName 设置日志是否显示函数名
-func SetShowFuncName(isShow bool) {
-	gLogger.showFuncName = isShow
-	eLogger.showFuncName = isShow
-}
-
 type Options func(g *Logger, e *Logger)
 
 // WithShowFuncName 设置日志是否显示函数名
@@ -227,24 +221,48 @@ func WithShowFuncName() Options {
 // WithPath 设置日志输出路径
 func WithPath(logDir string) Options {
 	return func(g *Logger, e *Logger) {
-		g.out = g.combineFileWithStdWriter(filepath.Join(logDir, globalFileName), os.Stdout)
-		e.out = e.combineFileWithStdWriter(filepath.Join(logDir, errFileName), os.Stderr)
+		gLogger.baseLogger.SetOutput(g.combineFileWithStdWriter(filepath.Join(logDir, globalFileName), os.Stdout))
+		eLogger.baseLogger.SetOutput(e.combineFileWithStdWriter(filepath.Join(logDir, errFileName), os.Stderr))
+	}
+}
+
+// WithWriter 设置日志输出Writer
+func WithWriter(stdG, stdE io.Writer) Options {
+	return func(g *Logger, e *Logger) {
+		gLogger.baseLogger.SetOutput(stdG)
+		eLogger.baseLogger.SetOutput(stdE)
+	}
+}
+
+// WithPath 设置日志输出路径
+func WithLevel(level string) Options {
+	return func(g *Logger, e *Logger) {
+		gLogger.SetLevel(getLevel(level))
+		eLogger.SetLevel(getLevel(level))
+	}
+}
+
+func WithFlag(flag int) Options {
+	return func(g *Logger, e *Logger) {
+		gLogger.flag, eLogger.flag = flag, flag
+		gLogger.baseLogger.SetFlags(flag)
+		eLogger.baseLogger.SetFlags(flag)
 	}
 }
 
 // Set log
-func Set(level string, flag int, options ...Options) {
-	if isInit {
-		return
-	}
-	isInit = true
-	gLogger.level, eLogger.level = getLevel(level), getLevel(level)
-	gLogger.flag, eLogger.flag = flag, flag
+func Set(options ...Options) { // level string, flag int,
+	// if isInit {
+	// 	return
+	// }
+	// isInit = true
+	// gLogger.level, eLogger.level = getLevel(level), getLevel(level)
+	// gLogger.flag, eLogger.flag = flag, flag
 	for _, op := range options {
 		op(gLogger, eLogger)
 	}
-	gLogger.baseLogger = log.New(gLogger.out, "", gLogger.flag)
-	eLogger.baseLogger = log.New(eLogger.out, "", eLogger.flag)
+	// gLogger.baseLogger = log.New(gLogger.out, "", gLogger.flag)
+	// eLogger.baseLogger = log.New(eLogger.out, "", eLogger.flag)
 }
 
 // CloseLogger 关闭日志
