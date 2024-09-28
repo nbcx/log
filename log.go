@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync/atomic"
 )
 
@@ -26,7 +27,30 @@ func (logger *Logger) Close() {
 	// logger.baseFile = nil
 }
 
-func (l *Logger) doPrintf(level int32, format string, a ...interface{}) {
+func formatPattern(f interface{}, v ...interface{}) string {
+	var msg string
+	switch f := f.(type) {
+	case string:
+		msg = f
+		if len(v) == 0 {
+			return msg
+		}
+		if !strings.Contains(msg, "%") {
+			// do not contain format char
+			msg += strings.Repeat(" %v", len(v))
+		}
+	default:
+		msg = fmt.Sprint(f)
+		if len(v) == 0 {
+			return msg
+		}
+		msg += strings.Repeat(" %v", len(v))
+	}
+	return msg
+}
+
+func (l *Logger) print(level int32, format any, a ...interface{}) {
+	msg := formatPattern(format, a...)
 	if level < atomic.LoadInt32(&l.level) {
 		return
 	}
@@ -34,7 +58,7 @@ func (l *Logger) doPrintf(level int32, format string, a ...interface{}) {
 		panic("logger closed case format is nil")
 	}
 
-	s := l.format.Format(l.opt, level, format, a...)
+	s := l.format.Format(l.opt, level, msg, a...)
 	_, _ = l.writer.Write(s)
 	// 额外的日志输出通道
 	for _, v := range l.extra[level] {
@@ -42,7 +66,7 @@ func (l *Logger) doPrintf(level int32, format string, a ...interface{}) {
 	}
 
 	if level == panicLevel {
-		panic(fmt.Sprintf(format, a...))
+		panic(fmt.Sprintf(msg, a...))
 	}
 
 	if level == fatalLevel {
@@ -56,61 +80,68 @@ func (l *Logger) SetLevel(level int32) {
 }
 
 // Debug Debug
-func (l *Logger) Debug(format string, a ...interface{}) {
-	l.doPrintf(debugLevel, format, a...)
+func (l *Logger) Debug(format any, a ...interface{}) {
+	l.print(debugLevel, format, a...)
 }
 
 // Info Info
-func (l *Logger) Info(format string, a ...interface{}) {
-	l.doPrintf(infoLevel, format, a...)
+func (l *Logger) Info(format any, a ...interface{}) {
+	l.print(infoLevel, format, a...)
 }
 
 // Warn Warn
-func (l *Logger) Warn(format string, a ...interface{}) {
-	l.doPrintf(warnLevel, format, a...)
+func (l *Logger) Warn(format any, a ...interface{}) {
+	l.print(warnLevel, format, a...)
 }
 
 // Error Error
-func (l *Logger) Error(format string, a ...interface{}) {
-	l.doPrintf(errorLevel, format, a...)
+func (l *Logger) Error(format any, a ...interface{}) {
+	l.print(errorLevel, format, a...)
 }
 
 // Panic Panic
-func (l *Logger) Panic(format string, a ...interface{}) {
-	l.doPrintf(panicLevel, format, a...)
+func (l *Logger) Panic(format any, a ...interface{}) {
+	l.print(panicLevel, format, a...)
 }
 
 // Fatal Fatal
-func (l *Logger) Fatal(format string, a ...interface{}) {
-	l.doPrintf(fatalLevel, format, a...)
+func (l *Logger) Fatal(format any, a ...interface{}) {
+	l.print(fatalLevel, format, a...)
 }
 
-// Debug Debug
-func Debug(format string, a ...interface{}) {
-	std.Debug(format, a...)
+// WithPath 设置日志输出路径
+func (l *Logger) WithLevel(level string) {
+	l.SetLevel(getLevel(level))
 }
 
-// Info Info
-func Info(format string, a ...interface{}) {
-	std.Info(format, a...)
+// 设置日志格式器
+func (l *Logger) SetFormatter(level string) {
+	l.SetLevel(getLevel(level))
 }
 
-// Warn Warn
-func Warn(format string, a ...interface{}) {
-	std.Warn(format, a...)
+// 设置日志输出
+func (l *Logger) SetWriter(w io.Writer) {
+	l.writer = w
 }
 
-// Error Error
-func Error(format string, a ...interface{}) {
-	std.Error(format, a...)
+// 为指定等级的日志设置额外的输出
+// 通常用于需要特别关注的紧急日志
+func (l *Logger) SetLevelWriter(level string, w ...io.Writer) {
+	lv := getLevel(level)
+	l.extra[lv] = append(l.extra[lv], w...)
 }
 
-// Error Error
-func Panic(format string, a ...interface{}) {
-	std.Panic(format, a...)
+// 设置日志显示格式
+// 需要注意，对于一些自定义的formatter，它并不是绝对生效的
+func (l *Logger) SetFlag(flag int) {
+	l.opt.SetFlags(flag)
 }
 
-// Fatal Fatal
-func Fatal(format string, a ...interface{}) {
-	std.Fatal(format, a...)
+// 通常我们需要把日志传递给第三方模块使用，并想要标记是第三方模块
+// 那么可以使用此函数获取一个带有指定标记的日志实例
+func (l *Logger) SetPrefix(flag int) *Logger {
+	l.opt.SetFlags(flag)
+
+	// todo: wait do
+	return l
 }

@@ -16,8 +16,9 @@ func TestInitLogger(t *testing.T) {
 	Debug("this is debug 2")
 
 	// Set(WithLevel("info"), WithWriter(os.Stdout)) // "debug", log.LstdFlags|log.Lmicroseconds, WithShowFuncName()
-	Info("this is info")
+	Info("this is info %v", 111, 1113)
 	Error("this is error")
+	Warn(1213)
 	// Panic("this is error")
 
 	fmt.Println("hello")

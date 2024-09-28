@@ -56,43 +56,38 @@ func WithLevel(level string) Options {
 	}
 }
 
-// WithPath 设置日志输出路径
-func (l *Logger) WithLevel(level string) {
-	l.SetLevel(getLevel(level))
+// Debug Debug
+func Debug(format any, a ...interface{}) {
+	std.Debug(format, a...)
 }
 
-// 设置日志格式器
-func (l *Logger) SetFormatter(level string) {
-	l.SetLevel(getLevel(level))
+// Info Info
+func Info(format any, a ...interface{}) {
+	std.Info(format, a...)
 }
 
-// 设置日志输出
-func (l *Logger) SetWriter(w io.Writer) {
-	l.writer = w
+// Warn Warn
+func Warn(format any, a ...interface{}) {
+	std.Warn(format, a...)
+}
+
+// Error Error
+func Error(format any, a ...interface{}) {
+	std.Error(format, a...)
+}
+
+// Error Error
+func Panic(format any, a ...interface{}) {
+	std.Panic(format, a...)
+}
+
+// Fatal Fatal
+func Fatal(format any, a ...interface{}) {
+	std.Fatal(format, a...)
 }
 
 // 为指定等级的日志设置额外的输出
 // 通常用于需要特别关注的紧急日志
 func SetLevelWriter(level string, w ...io.Writer) {
 	std.SetLevelWriter(level, w...)
-}
-
-func (l *Logger) SetLevelWriter(level string, w ...io.Writer) {
-	lv := getLevel(level)
-	l.extra[lv] = append(l.extra[lv], w...)
-}
-
-// 设置日志显示格式
-// 需要注意，对于一些自定义的formatter，它并不是绝对生效的
-func (l *Logger) SetFlag(flag int) {
-	l.opt.SetFlags(flag)
-}
-
-// 通常我们需要把日志传递给第三方模块使用，并想要标记是第三方模块
-// 那么可以使用此函数获取一个带有指定标记的日志实例
-func (l *Logger) SetPrefix(flag int) *Logger {
-	l.opt.SetFlags(flag)
-
-	// todo: wait do
-	return l
 }
