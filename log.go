@@ -27,7 +27,7 @@ func (logger *Logger) Close() {
 	// logger.baseFile = nil
 }
 
-func formatPattern(f interface{}, v ...interface{}) string {
+func formatPattern(f interface{}, v []interface{}) string {
 	var msg string
 	switch f := f.(type) {
 	case string:
@@ -50,7 +50,7 @@ func formatPattern(f interface{}, v ...interface{}) string {
 }
 
 func (l *Logger) print(level int32, format any, a ...interface{}) {
-	msg := formatPattern(format, a...)
+	msg := formatPattern(format, a)
 	if level < atomic.LoadInt32(&l.level) {
 		return
 	}
