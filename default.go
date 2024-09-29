@@ -24,8 +24,27 @@ type DefaultFormat struct {
 // The prefix appears at the beginning of each generated log line, or
 // after the log header if the [Lmsgprefix] flag is provided.
 // The flag argument defines the logging properties.
-func New(out io.Writer, prefix string, flag int) *DefaultFormat {
-	l := new(DefaultFormat)
+func New(out io.Writer, prefix string, flags ...int) *Log {
+	l := new(Log)
+	l.level = debugLevel
+
+	l.opt = &Option{
+		CallDepth:    4,
+		ShowFuncName: true,
+		Flag:         LstdFlags | Ltime | Lshortfile,
+	}
+
+	// todo: wait adjust
+	if len(flags) > 0 {
+		var flag int
+		for _, v := range flags {
+			flag = flag | v
+		}
+		l.opt.Flag = flag
+	}
+
+	l.format = NewConsole()
+	l.writer = out
 	return l
 }
 
