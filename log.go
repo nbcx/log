@@ -9,7 +9,7 @@ import (
 )
 
 // Logger Logger
-type Logger struct {
+type Log struct {
 	level  int32
 	opt    *Option
 	format Formatter
@@ -18,7 +18,7 @@ type Logger struct {
 }
 
 // Close It's dangerous to call the method on logging
-func (logger *Logger) Close() {
+func (logger *Log) Close() {
 	// if logger.baseFile != nil {
 	// 	_ = logger.baseFile.Close()
 	// }
@@ -49,7 +49,7 @@ func formatPattern(f interface{}, v []interface{}) string {
 	return msg
 }
 
-func (l *Logger) print(level int32, format any, a ...interface{}) {
+func (l *Log) print(level int32, format any, a ...interface{}) {
 	msg := formatPattern(format, a)
 	if level < atomic.LoadInt32(&l.level) {
 		return
@@ -75,71 +75,71 @@ func (l *Logger) print(level int32, format any, a ...interface{}) {
 }
 
 // SetLevel SetLevel
-func (l *Logger) SetLevel(level int32) {
+func (l *Log) SetLevel(level int32) {
 	atomic.StoreInt32(&l.level, level)
 }
 
 // Debug Debug
-func (l *Logger) Debug(format any, a ...interface{}) {
+func (l *Log) Debug(format any, a ...interface{}) {
 	l.print(debugLevel, format, a...)
 }
 
 // Info Info
-func (l *Logger) Info(format any, a ...interface{}) {
+func (l *Log) Info(format any, a ...interface{}) {
 	l.print(infoLevel, format, a...)
 }
 
 // Warn Warn
-func (l *Logger) Warn(format any, a ...interface{}) {
+func (l *Log) Warn(format any, a ...interface{}) {
 	l.print(warnLevel, format, a...)
 }
 
 // Error Error
-func (l *Logger) Error(format any, a ...interface{}) {
+func (l *Log) Error(format any, a ...interface{}) {
 	l.print(errorLevel, format, a...)
 }
 
 // Panic Panic
-func (l *Logger) Panic(format any, a ...interface{}) {
+func (l *Log) Panic(format any, a ...interface{}) {
 	l.print(panicLevel, format, a...)
 }
 
 // Fatal Fatal
-func (l *Logger) Fatal(format any, a ...interface{}) {
+func (l *Log) Fatal(format any, a ...interface{}) {
 	l.print(fatalLevel, format, a...)
 }
 
 // WithPath 设置日志输出路径
-func (l *Logger) WithLevel(level string) {
+func (l *Log) WithLevel(level string) {
 	l.SetLevel(getLevel(level))
 }
 
 // 设置日志格式器
-func (l *Logger) SetFormatter(level string) {
+func (l *Log) SetFormatter(level string) {
 	l.SetLevel(getLevel(level))
 }
 
 // 设置日志输出
-func (l *Logger) SetWriter(w io.Writer) {
+func (l *Log) SetWriter(w io.Writer) {
 	l.writer = w
 }
 
 // 为指定等级的日志设置额外的输出
 // 通常用于需要特别关注的紧急日志
-func (l *Logger) SetLevelWriter(level string, w ...io.Writer) {
+func (l *Log) SetLevelWriter(level string, w ...io.Writer) {
 	lv := getLevel(level)
 	l.extra[lv] = append(l.extra[lv], w...)
 }
 
 // 设置日志显示格式
 // 需要注意，对于一些自定义的formatter，它并不是绝对生效的
-func (l *Logger) SetFlag(flag int) {
+func (l *Log) SetFlag(flag int) {
 	l.opt.SetFlags(flag)
 }
 
 // 通常我们需要把日志传递给第三方模块使用，并想要标记是第三方模块
 // 那么可以使用此函数获取一个带有指定标记的日志实例
-func (l *Logger) SetPrefix(flag int) *Logger {
+func (l *Log) SetPrefix(flag int) *Log {
 	l.opt.SetFlags(flag)
 
 	// todo: wait do

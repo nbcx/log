@@ -7,10 +7,10 @@ import (
 	"github.com/shiena/ansicolor"
 )
 
-var std *Logger
+var std *Log
 
 func init() {
-	std = new(Logger)
+	std = new(Log)
 	std.level = debugLevel
 	std.opt = &Option{
 		CallDepth:    4,
@@ -21,18 +21,13 @@ func init() {
 	std.writer = ansicolor.NewAnsiColorWriter(os.Stdout)
 }
 
-type Options func(g *Logger)
+type Options func(g *Log)
 
 // Set log
 func Set(options ...Options) { // level string, flag int,
 	for _, op := range options {
 		op(std)
 	}
-}
-
-// GetLogger default log
-func GetLogger() *Logger {
-	return std
 }
 
 // WithPath 设置日志输出路径
@@ -49,9 +44,18 @@ func GetLogger() *Logger {
 // 	}
 // }
 
+type Logger interface {
+	Debug(msg any, a ...interface{})
+	Info(msg any, a ...interface{})
+	Warn(msg any, a ...interface{})
+	Error(msg any, a ...interface{})
+	Panic(msg any, a ...interface{})
+	Fatal(msg any, a ...interface{})
+}
+
 // WithPath 设置日志输出路径
 func WithLevel(level string) Options {
-	return func(g *Logger) {
+	return func(g *Log) {
 		g.SetLevel(getLevel(level))
 	}
 }

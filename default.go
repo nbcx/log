@@ -30,7 +30,7 @@ func New(out io.Writer, prefix string, flag int) *DefaultFormat {
 }
 
 // Default returns the standard logger used by the package-level output functions.
-func Default() *Logger { return std }
+func Default() *Log { return std }
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
 func itoa(buf *[]byte, i int, wid int) {
