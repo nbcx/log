@@ -2,23 +2,15 @@ package log
 
 import (
 	"io"
-	"os"
-
-	"github.com/shiena/ansicolor"
 )
 
-var std *Log
-
-func init() {
-	std = new(Log)
-	std.level = debugLevel
-	std.opt = &Option{
-		CallDepth:    4,
-		ShowFuncName: true,
-		Flag:         LstdFlags | Ltime | Lshortfile,
-	}
-	std.format = NewConsole()
-	std.writer = ansicolor.NewAnsiColorWriter(os.Stdout)
+type Logger interface {
+	Debug(msg any, a ...interface{})
+	Info(msg any, a ...interface{})
+	Warn(msg any, a ...interface{})
+	Error(msg any, a ...interface{})
+	Panic(msg any, a ...interface{})
+	Fatal(msg any, a ...interface{})
 }
 
 type Options func(g *Log)
@@ -38,19 +30,11 @@ func Set(options ...Options) { // level string, flag int,
 // }
 
 // WithWriter 设置日志输出Writer
-// func WithWriter(w io.Writer) Options {
-// 	return func(g *Logger) {
-// 		g.handle.SetOutput(w)
-// 	}
-// }
-
-type Logger interface {
-	Debug(msg any, a ...interface{})
-	Info(msg any, a ...interface{})
-	Warn(msg any, a ...interface{})
-	Error(msg any, a ...interface{})
-	Panic(msg any, a ...interface{})
-	Fatal(msg any, a ...interface{})
+func WithWriter(w io.Writer) Options {
+	return func(g *Log) {
+		g.writer = w
+		// g.handle.SetOutput(w)
+	}
 }
 
 // WithPath 设置日志输出路径
